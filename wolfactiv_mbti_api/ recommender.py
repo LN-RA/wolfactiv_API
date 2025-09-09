@@ -1,6 +1,75 @@
 import numpy as np
 import pandas as pd
 import difflib
+from pathlib import Path
+from fastapi import HTTPException
+
+DATA_DIR = Path(__file__).parent / "data"
+PARFUMS_CSV = DATA_DIR / "parfums_enrichi.csv"
+
+CANDIDATE_FAM_COLS = [
+    "famille", "familles", "famille olfactive", "familles olfactives",
+    "famille_olfactive", "familles_olfactives",
+    "olfactive_family", "olfactory_family", "family", "families"
+]
+
+def _find_fam_col(df: pd.DataFrame) -> str | None:
+    norm = {c.lower().strip(): c for c in df.columns}
+    for key in CANDIDATE_FAM_COLS:
+        if key in norm:
+            return norm[key]
+    return None
+
+def _read_csv_safely(path: Path) -> pd.DataFrame:
+    # 1) lecture standard ; header à la ligne 0
+    for enc in ("utf-8", "latin-1", "cp1252"):
+        try:
+            df = pd.read_csv(path, sep=";", encoding=enc, engine="python")
+            df.columns = [str(c).strip() for c in df.columns]
+            fam = _find_fam_col(df)
+            if fam:
+                return df
+            break
+        except UnicodeDecodeError:
+            continue
+
+    # 2) si pas trouvé, retenter en supposant une ligne parasite -> header=1
+    for enc in ("utf-8", "latin-1", "cp1252"):
+        try:
+            df = pd.read_csv(path, sep=";", header=1, encoding=enc, engine="python")
+            df.columns = [str(c).strip() for c in df.columns]
+            fam = _find_fam_col(df)
+            if fam:
+                return df
+        except UnicodeDecodeError:
+            continue
+
+    # 3) dernier recours: header inconnu -> on cherche la ligne d’entêtes dans les 3 premières lignes
+    df0 = pd.read_csv(path, sep=";", header=None, engine="python", encoding="latin-1")
+    for r in range(min(3, len(df0))):
+        header = [str(x).strip() for x in df0.iloc[r].tolist()]
+        norm = [h.lower() for h in header]
+        if any(x in norm for x in CANDIDATE_FAM_COLS):
+            df = df0.iloc[r+1:].copy()
+            df.columns = header
+            df.columns = [str(c).strip() for c in df.columns]
+            fam = _find_fam_col(df)
+            if fam:
+                return df
+
+    raise HTTPException(
+        status_code=500,
+        detail=f"Aucune colonne de familles olfactives trouvée. Colonnes lues: {list(df0.columns)} (mode header=None)."
+    )
+
+def charger_parfums_df() -> tuple[pd.DataFrame, str]:
+    df = _read_csv_safely(PARFUMS_CSV)
+    fam_col = _find_fam_col(df)
+    if not fam_col:
+        raise HTTPException(status_code=500, detail=f"Aucune colonne 'famille' détectée. Colonnes: {list(df.columns)}")
+    # (debug utile)
+    print(f"[parfums_enrichi.csv] colonnes={list(df.columns)} ; fam_col='{fam_col}' ; n={len(df)}")
+    return df, fam_col
 
 def get_u_final(u_vector):
     print("📥 u_vector (input):", u_vector)
