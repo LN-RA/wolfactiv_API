@@ -11,6 +11,14 @@ from .recommender import get_u_final, calculate_similarities
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Remplace "*" par ton domaine frontend si besoin
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/", include_in_schema=False)
 def root():
     return {"status": "ok", "service": "wolfactiv_mbti_api"}
@@ -29,16 +37,6 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 supabase_key = os.getenv("SUPABASE_KEY")
 supabase_url = "https://oimzzeyjjovxdhuscmqw.supabase.co"
 supabase: Client = create_client(supabase_url, supabase_key)
-
-
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Remplace "*" par ton domaine frontend si besoin
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 class QuizRequest(BaseModel):
     email: str
