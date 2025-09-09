@@ -3,21 +3,36 @@ import pandas as pd
 import difflib
 from pathlib import Path
 from fastapi import HTTPException
+import unicodedata, re
 
 DATA_DIR = Path(__file__).parent / "data"
 PARFUMS_CSV = DATA_DIR / "parfums_enrichi.csv"
 
+def _slug(s: str) -> str:
+    # enlève accents, espaces, ponctuation → "Famille olfactive(s)" => "familleolfactives"
+    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"[^a-z0-9]+", "", s.lower())
+
 CANDIDATE_FAM_COLS = [
     "famille", "familles", "famille olfactive", "familles olfactives",
     "famille_olfactive", "familles_olfactives",
-    "olfactive_family", "olfactory_family", "family", "families"
+    "olfactive family", "olfactory family", "family", "families",
+    "famille(s) olfactive(s)", "famille-olfactive", "familles-olfactives"
 ]
+CANDIDATE_FAM_SLUGS = {_slug(x) for x in CANDIDATE_FAM_COLS}
 
 def _find_fam_col(df: pd.DataFrame) -> str | None:
-    norm = {c.lower().strip(): c for c in df.columns}
-    for key in CANDIDATE_FAM_COLS:
-        if key in norm:
-            return norm[key]
+    mapping = {_slug(c): c for c in df.columns}
+    # log debug utile
+    print("[CSV] colonnes brutes:", list(df.columns))
+    print("[CSV] colonnes normalisées:", list(mapping.keys()))
+    for key in CANDIDATE_FAM_SLUGS:
+        if key in mapping:
+            return mapping[key]
+    # dernier recours : cherche toute colonne qui contient 'famill' en slug
+    for slug, original in mapping.items():
+        if "famill" in slug and "olfactiv" in slug:
+            return original
     return None
 
 def _read_csv_safely(path: Path) -> pd.DataFrame:
