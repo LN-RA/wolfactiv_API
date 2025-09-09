@@ -75,12 +75,8 @@ def get_u_final(u_vector):
     print("📥 u_vector (input):", u_vector)
 
     # Chargement de la matrice de similarité
-    S_df = pd.read_csv(
-        "C:/Users/helen/Downloads/wolfactiv_backend_complet/data/similarité matrice.csv",
-        index_col=0,
-        encoding="ISO-8859-1", 
-        sep=";"
-    )
+    # APRÈS
+S_df = charger_matrice_similarite()
     S = S_df.to_numpy()
     u = np.array(u_vector)
 
@@ -95,11 +91,7 @@ def get_u_final(u_vector):
 
 def calculate_similarities(u_final):
     # Chargement du fichier des parfums enrichis
-    df_parfums = pd.read_csv(
-        "C:/Users/helen/Downloads/wolfactiv_backend_complet/data/parfums_enrichi.csv",
-        encoding="ISO-8859-1",
-        sep=";"
-    )
+   df_parfums, fam_col = charger_parfums_df()
 
     # Nettoyage des colonnes
     df_parfums.columns = df_parfums.columns.str.strip().str.replace('\u202f|\u00a0', '', regex=True)
