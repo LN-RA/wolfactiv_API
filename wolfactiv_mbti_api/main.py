@@ -9,6 +9,15 @@ from openai import OpenAI
 import pandas as pd
 from .recommender import get_u_final, calculate_similarities
 
+@app.get("/", include_in_schema=False)
+def root():
+    return {"status": "ok", "service": "wolfactiv_mbti_api"}
+
+@app.get("/health", include_in_schema=False)
+def health():
+    return {"status": "ok"}
+
+
 # Charger les variables d'environnement depuis .env
 env_path = Path(__file__).parent / ".env"
 load_dotenv(dotenv_path=env_path)
