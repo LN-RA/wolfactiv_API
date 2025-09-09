@@ -9,6 +9,8 @@ from openai import OpenAI
 import pandas as pd
 from .recommender import get_u_final, calculate_similarities
 
+app = FastAPI()
+
 @app.get("/", include_in_schema=False)
 def root():
     return {"status": "ok", "service": "wolfactiv_mbti_api"}
@@ -28,7 +30,7 @@ supabase_key = os.getenv("SUPABASE_KEY")
 supabase_url = "https://oimzzeyjjovxdhuscmqw.supabase.co"
 supabase: Client = create_client(supabase_url, supabase_key)
 
-app = FastAPI()
+
 
 app.add_middleware(
     CORSMiddleware,
