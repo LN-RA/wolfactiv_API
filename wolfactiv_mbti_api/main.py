@@ -98,7 +98,13 @@ def get_persona_and_quote(mbti: str):
         # ... ajoute d'autres profils selon ta base
     }
     return mbti_dict.get(mbti, ("Inconnu", "Aucune citation disponible."))
+    
+app.add_api_route("/analyze-mbti", analyze_mbti, methods=["POST"])
 
+# Alias pour matcher ce que le front appelle
+app.add_api_route("/analyze_mbti", analyze_mbti, methods=["POST"], include_in_schema=False)
+app.add_api_route("/analyze_mbti/", analyze_mbti, methods=["POST"], include_in_schema=False)
+app.add_api_route("/analyze-mbti/", analyze_mbti, methods=["POST"], include_in_schema=False)
 # Endpoint principal
 from fastapi.encoders import jsonable_encoder
 
